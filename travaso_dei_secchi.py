@@ -32,12 +32,16 @@ class State:
     def __str__(self) -> str:
         return f"{self.bucketA} | {self.bucketB} | {self.bucketC}"
 
-def copyState(state):
-    bA = Bucket(state.bucketA.name, state.bucketA.capacity, state.bucketA.level)
-    bB = Bucket(state.bucketB.name, state.bucketB.capacity, state.bucketB.level)
-    bC = Bucket(state.bucketC.name, state.bucketC.capacity, state.bucketC.level)
+class Bucket:
+    def __init__(self, name, capacity, level) -> None:
+        self.name = name
+        self.capacity = capacity
+        self.level = level
+    def __str__(self) -> str:
+        #return f"{self.name}. Capacity: {self.capacity}. Level: {self.level}"
+        return f"{self.level}"
 
-    return State(bA,bB,bC)
+
 
 def generatePossibleStates(initialState):
     
@@ -53,26 +57,6 @@ def generatePossibleStates(initialState):
                     possibleStates.append(newState)
     
     return possibleStates
-
-
-def canGive(bucket):
-    return bucket.level > 0
-
-def isValidState(state):
-    return not(state.bucketA.level > state.bucketA.capacity or
-     state.bucketB.level > state.bucketB.capacity or state.bucketC.level > state.bucketC.capacity)
-
-
-class Bucket:
-    def __init__(self, name, capacity, level) -> None:
-        self.name = name
-        self.capacity = capacity
-        self.level = level
-    def __str__(self) -> str:
-        #return f"{self.name}. Capacity: {self.capacity}. Level: {self.level}"
-        return f"{self.level}"
-
-    
 
 def pourWater(b1, b2):
     
@@ -92,6 +76,21 @@ def pourWater(b1, b2):
         b1.level = 0
     return b1,b2
 
+def copyState(state):
+    bA = Bucket(state.bucketA.name, state.bucketA.capacity, state.bucketA.level)
+    bB = Bucket(state.bucketB.name, state.bucketB.capacity, state.bucketB.level)
+    bC = Bucket(state.bucketC.name, state.bucketC.capacity, state.bucketC.level)
+
+    return State(bA,bB,bC)
+
+def canGive(bucket):
+    return bucket.level > 0
+
+def isValidState(state):
+    return not(state.bucketA.level > state.bucketA.capacity or
+     state.bucketB.level > state.bucketB.capacity or state.bucketC.level > state.bucketC.capacity)
+
+ 
 def compareStates(stateA, stateB):
     stateABuckets = stateA.getBuckets()
     stateBBuckets = stateB.getBuckets()
@@ -101,8 +100,9 @@ def compareStates(stateA, stateB):
             same = False
     return same
 
-def allNodesExplored():
-    pass
+def allNodesExplored(table):
+    bools = [item[1] for item in table.values()]
+    return all(bools)
 
 if __name__== "__main__":
     
@@ -112,8 +112,8 @@ if __name__== "__main__":
     initialState = State(bA, bB, bC)
     
     goalA = Bucket("Bucket A", 8, 4)
-    goalB = Bucket("Bucket B", 5, 4)
-    goalC = Bucket("Bucket C", 3, 0)
+    goalB = Bucket("Bucket B", 5, 2)
+    goalC = Bucket("Bucket C", 3, 3)
     goalState = State(goalA, goalB, goalC)
 
 
@@ -122,6 +122,9 @@ if __name__== "__main__":
     stateFound = False
     i = 1
     while not stateFound:
+        if allNodesExplored(hashTable):
+            print("State not possible")
+            break
         for nodeId in list(hashTable):
             if not hashTable[nodeId][1]:
                 states = generatePossibleStates(nodes[nodeId])
@@ -143,14 +146,15 @@ if __name__== "__main__":
                     if stateFound: break
                 if stateFound: break
 
-previosNode = hashTable[len(nodes)-1][0]
-path=[nodes[-1]]
-while previosNode != "root":
-    path.append(nodes[previosNode])
-    previosNode = hashTable[previosNode][0]
+if stateFound:
+    previosNode = hashTable[len(nodes)-1][0]
+    path=[nodes[-1]]
+    while previosNode != "root":
+        path.append(nodes[previosNode])
+        previosNode = hashTable[previosNode][0]
 
-for node in path[::-1]:
-    print(node)
+    for node in path[::-1]:
+        print(node)
 
 
 
