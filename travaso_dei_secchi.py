@@ -19,6 +19,7 @@ starting bucket
 """
 PARENT_NODE = 0
 EXPLORED_NODE = 1
+NODE_ID = 2
 
 class State:
     def __init__(self, bucketA, bucketB, bucketC) -> None:
@@ -29,6 +30,8 @@ class State:
             raise ValueError('All initial volumes must be less than the maximun volumes')
     def getBuckets(self):
         return (self.bucketA, self.bucketB, self.bucketC)
+    def getBucketsLevels(self):
+        return (self.bucketA.level, self.bucketB.level, self.bucketC.level)
     def numOfBuckets(self):
         return len(self.getBuckets())
     def __str__(self) -> str:
@@ -99,15 +102,9 @@ def isValidState(state):
  
 def compareStates(stateA, stateB):
     """
-    O(n) -> n #buckets
+    O(1)
     """
-    stateABuckets = stateA.getBuckets()
-    stateBBuckets = stateB.getBuckets()
-    same = True
-    for bucketA, bucketB in zip(stateABuckets,stateBBuckets):
-        if bucketA.level != bucketB.level:
-            same = False
-    return same
+    return hash(stateA.getBucketsLevels()) == hash(stateB.getBucketsLevels())
 
 def getUnexploredNodes(table):
     """
@@ -118,15 +115,11 @@ def getUnexploredNodes(table):
 
 def stateExist(state, table, nodes):
     """
-    O(n^2) -> #states in table * #buckets
+    O(n) -> #states in table
     """
-    stateExist = False
-    for key in table.keys():
-        # O(n) -> n #buckets
-        if compareStates(state, nodes[key]):
-            stateExist = True
-            break  
-    return stateExist
+    return hash(state.getBucketsLevels()) in table
+
+
 
 def getGoalStatePath(initialState, goalState):
     """
@@ -134,8 +127,7 @@ def getGoalStatePath(initialState, goalState):
     statesUntilGoalState * unexploredNodes * possibleStates * statesInTable * #buckets
     For this problem, max = 8*3*5*7*3 = 2520
     """
-
-    hashTable = {0: ["root", False]}
+    hashTable = {hash(initialState.getBucketsLevels()): ["root", False, 0]}
     nodes = [initialState]
     stateFound = False
     i = 1
@@ -154,26 +146,27 @@ def getGoalStatePath(initialState, goalState):
         for nodeId in unexploredNodes:
 
             # O(n*(n-1)) n -> #buckets
-            states = generatePossibleStates(nodes[nodeId])
+            states = generatePossibleStates(nodes[hashTable[nodeId][NODE_ID]])
             hashTable[nodeId][EXPLORED_NODE] = True
             # O(n) n-> #possible states (empirically, max 5)
             for state in states:
-                # O(n^2)
-                if stateExist(state, hashTable,nodes): continue
                 # O(n)
+                if stateExist(state, hashTable,nodes): continue
+                # O(1)
                 stateFound = compareStates(state, goalState)
-                hashTable[i] = [nodeId, False]
+                hashTable[hash(state.getBucketsLevels())] = [nodeId, False, i]
                 i+=1
                 nodes.append(state)
+                print(state)
                 if stateFound: break
             if stateFound: break
 
     if stateFound:
-        previosNode = hashTable[len(nodes)-1][PARENT_NODE]
+        previousNode = hashTable[hash(goalState.getBucketsLevels())][PARENT_NODE]
         path=[nodes[-1]]
-        while previosNode != "root":
-            path.append(nodes[previosNode])
-            previosNode = hashTable[previosNode][PARENT_NODE]
+        while previousNode != "root":
+            path.append(nodes[hashTable[previousNode][NODE_ID]])
+            previousNode = hashTable[previousNode][PARENT_NODE]
 
         for node in path[::-1]:
             print(node)
