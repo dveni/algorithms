@@ -17,6 +17,8 @@ left
 destination bucket doesn’t have enough capacity to accept the entire content of the
 starting bucket 
 """
+PARENT_NODE = 0
+EXPLORED_NODE = 1
 
 class State:
     def __init__(self, bucketA, bucketB, bucketC) -> None:
@@ -44,7 +46,9 @@ class Bucket:
 
 
 def generatePossibleStates(initialState):
-    
+    """
+    O(n*(n-1)) -> n=3 buckets
+    """
     possibleStates = []
 
     for i in range(initialState.numOfBuckets()):
@@ -59,7 +63,9 @@ def generatePossibleStates(initialState):
     return possibleStates
 
 def pourWater(b1, b2):
-    
+    """
+    O(1)
+    """
     # Pour water from bucket b1 into bucket b2
 
     # Test both objects are buckets
@@ -92,6 +98,9 @@ def isValidState(state):
 
  
 def compareStates(stateA, stateB):
+    """
+    O(n) -> n #buckets
+    """
     stateABuckets = stateA.getBuckets()
     stateBBuckets = stateB.getBuckets()
     same = True
@@ -100,9 +109,74 @@ def compareStates(stateA, stateB):
             same = False
     return same
 
-def allNodesExplored(table):
-    bools = [item[1] for item in table.values()]
-    return all(bools)
+def getUnexploredNodes(table):
+    """
+    O(n) n -> #nodes in table
+    """
+    unexplored = [item for item in table if not table[item][EXPLORED_NODE]]
+    return unexplored
+
+def stateExist(state, table, nodes):
+    """
+    O(n^2) -> #states in table * #buckets
+    """
+    stateExist = False
+    for key in table.keys():
+        # O(n) -> n #buckets
+        if compareStates(state, nodes[key]):
+            stateExist = True
+            break  
+    return stateExist
+
+def getGoalStatePath(initialState, goalState):
+    """
+    O(n^5)
+    statesUntilGoalState * unexploredNodes * possibleStates * statesInTable * #buckets
+    For this problem, max = 8*3*5*7*3 = 2520
+    """
+
+    hashTable = {0: ["root", False]}
+    nodes = [initialState]
+    stateFound = False
+    i = 1
+    
+    while not stateFound:
+        # O(n)
+        unexploredNodes = getUnexploredNodes(hashTable)
+        if len(unexploredNodes) < 1:
+            print("State not possible")
+            break
+        """
+        O(n^4) 
+        unexploredNodes * possibleStates * statesInTable * #buckets
+        Typically, there are between 2-3 unexplored nodes
+        """
+        for nodeId in unexploredNodes:
+
+            # O(n*(n-1)) n -> #buckets
+            states = generatePossibleStates(nodes[nodeId])
+            hashTable[nodeId][EXPLORED_NODE] = True
+            # O(n) n-> #possible states (empirically, max 5)
+            for state in states:
+                # O(n^2)
+                if stateExist(state, hashTable,nodes): continue
+                # O(n)
+                stateFound = compareStates(state, goalState)
+                hashTable[i] = [nodeId, False]
+                i+=1
+                nodes.append(state)
+                if stateFound: break
+            if stateFound: break
+
+    if stateFound:
+        previosNode = hashTable[len(nodes)-1][PARENT_NODE]
+        path=[nodes[-1]]
+        while previosNode != "root":
+            path.append(nodes[previosNode])
+            previosNode = hashTable[previosNode][PARENT_NODE]
+
+        for node in path[::-1]:
+            print(node)
 
 if __name__== "__main__":
     
@@ -112,49 +186,12 @@ if __name__== "__main__":
     initialState = State(bA, bB, bC)
     
     goalA = Bucket("Bucket A", 8, 4)
-    goalB = Bucket("Bucket B", 5, 2)
-    goalC = Bucket("Bucket C", 3, 3)
+    goalB = Bucket("Bucket B", 5, 4)
+    goalC = Bucket("Bucket C", 3, 0)
     goalState = State(goalA, goalB, goalC)
 
-
-    hashTable = {0: ["root", False]}
-    nodes = [initialState]
-    stateFound = False
-    i = 1
-    while not stateFound:
-        if allNodesExplored(hashTable):
-            print("State not possible")
-            break
-        for nodeId in list(hashTable):
-            if not hashTable[nodeId][1]:
-                states = generatePossibleStates(nodes[nodeId])
-                hashTable[nodeId][1] = True
-                for state in states:
-                    
-                    stateExist = False
-                    for key in hashTable.keys():
-                        if compareStates(state, nodes[key]):
-                            stateExist = True
-                            break  
-                    if stateExist: continue
-
-                    stateFound = compareStates(state, goalState)
-                    #print(state)
-                    hashTable[i] = [nodeId, False]
-                    i+=1
-                    nodes.append(state)
-                    if stateFound: break
-                if stateFound: break
-
-if stateFound:
-    previosNode = hashTable[len(nodes)-1][0]
-    path=[nodes[-1]]
-    while previosNode != "root":
-        path.append(nodes[previosNode])
-        previosNode = hashTable[previosNode][0]
-
-    for node in path[::-1]:
-        print(node)
+    getGoalStatePath(initialState, goalState)
+    
 
 
 
@@ -163,3 +200,5 @@ if stateFound:
 # althoug much of the nodes can be reacher from multiple paths so we do not find the most short, just a path
 
 # Assume there are finite states
+
+# Only 3 buckets
