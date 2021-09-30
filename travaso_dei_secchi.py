@@ -115,7 +115,8 @@ def getUnexploredNodes(table):
 
 def stateExist(state, table, nodes):
     """
-    O(n) -> #states in table
+    O(1)
+    See https://stackoverflow.com/questions/17539367/python-dictionary-keys-in-complexity
     """
     return hash(state.getBucketsLevels()) in table
 
@@ -123,9 +124,9 @@ def stateExist(state, table, nodes):
 
 def getGoalStatePath(initialState, goalState):
     """
-    O(n^5)
-    statesUntilGoalState * unexploredNodes * possibleStates * statesInTable * #buckets
-    For this problem, max = 8*3*5*7*3 = 2520
+    O(n^3)
+    statesUntilGoalState * unexploredNodes * possibleStates
+    For this problem, max = 8*3*5 = 120
     """
     hashTable = {hash(initialState.getBucketsLevels()): ["root", False, 0]}
     nodes = [initialState]
@@ -136,11 +137,11 @@ def getGoalStatePath(initialState, goalState):
         # O(n)
         unexploredNodes = getUnexploredNodes(hashTable)
         if len(unexploredNodes) < 1:
-            print("State not possible")
+            print("Goal state not possible")
             break
         """
-        O(n^4) 
-        unexploredNodes * possibleStates * statesInTable * #buckets
+        O(n^2) 
+        unexploredNodes * possibleStates
         Typically, there are between 2-3 unexplored nodes
         """
         for nodeId in unexploredNodes:
@@ -157,7 +158,7 @@ def getGoalStatePath(initialState, goalState):
                 hashTable[hash(state.getBucketsLevels())] = [nodeId, False, i]
                 i+=1
                 nodes.append(state)
-                print(state)
+                #print(state)
                 if stateFound: break
             if stateFound: break
 
